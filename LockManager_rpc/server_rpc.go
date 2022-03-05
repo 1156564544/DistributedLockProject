@@ -9,24 +9,6 @@ type LockReply struct {
 	Error error
 }
 
-type UnLockArgs struct {
-	ClientId string
-	LockName string
-}
-
-type UnLockReply struct {
-	Error error
-}
-
-type OwnTheLockArgs struct {
-	ClientId string
-	LockName string
-}
-
-type OwnTheLockReply struct {
-	Error error
-}
-
 type LockManageArgs struct {
 	Method   int // 0 for preempt; 1 for release
 	ClientId string
@@ -35,4 +17,20 @@ type LockManageArgs struct {
 
 type LockManageReply struct {
 	Success bool
+}
+
+type LockModifyArgs struct {
+	LockName string
+	ClientId string
+}
+
+type LockModifyReply struct {
+	Success bool
+}
+
+type ClientConnectArgs struct {
+	ClientId string
+}
+type ClientConnectReply struct {
+	Error error
 }
