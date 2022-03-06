@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/rpc"
+	"os"
 )
 
 var ServerIP = []string{
 	"0.0.0.0:80",
+	"0.0.0.0:81",
 }
 
 type DLClient struct {
@@ -36,7 +38,7 @@ func (c *DLClient) connectedToServer(serverAddr string) bool {
 		return false
 	}
 	c.isConnected = true
-	fmt.Printf("Client %v connected to server %v", c.clientId, serverAddr)
+	fmt.Printf("Client %v connected to server %v \n", c.clientId, serverAddr)
 	return true
 }
 
@@ -50,13 +52,17 @@ func (c *DLClient) TryLock(LockKey string) bool {
 	request.LockName = LockKey
 	request.ClientId = c.getClientId()
 	err := c.client.Call("Server.Lock", request, reply)
+
 	if err != nil {
+		fmt.Println(err.Error())
+		fmt.Printf("Client %v locks %v failed!\n", c.clientId, LockKey)
 		return false
 	}
-	if reply.Error != nil {
-		fmt.Println(reply.Error.Error())
+	if reply.Success == false {
+		fmt.Printf("Client %v locks %v failed!\n", c.clientId, LockKey)
 		return false
 	}
+	fmt.Printf("Client %v locks %v successfully!\n", c.clientId, LockKey)
 	return true
 }
 
@@ -69,8 +75,8 @@ func (c *DLClient) TryUnLock(LockKey string) bool {
 	if err != nil {
 		return false
 	}
-	if reply.Error != nil {
-		fmt.Println(reply.Error.Error())
+	if reply.Success == false {
+		fmt.Printf("Client %v try to unlocks %v failed!\n", c.clientId, LockKey)
 		return false
 	}
 
@@ -86,8 +92,7 @@ func (c *DLClient) OwnTheLock(LockKey string) bool {
 	if err != nil {
 		return false
 	}
-	if reply.Error != nil {
-		fmt.Println(reply.Error.Error())
+	if reply.Success == false {
 		return false
 	}
 
@@ -120,17 +125,12 @@ func DistributedLock(serverAddr string, clientId string) DLClient {
 }
 
 func main() {
-	serverAddr := "0.0.0.0:80"
-	clientId := "client1"
+	serverAddr := os.Args[1]
+	clientId := os.Args[2]
 	DL := DistributedLock(serverAddr, clientId)
 
 	DL.TryLock("lock1")
 	if DL.OwnTheLock("lock1") {
-		fmt.Println("Client own the lock")
-	} else {
-		fmt.Println("Client not own the lock")
-	}
-	if DL.OwnTheLock("lock2") {
 		fmt.Println("Client own the lock")
 	} else {
 		fmt.Println("Client not own the lock")

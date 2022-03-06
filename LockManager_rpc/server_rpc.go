@@ -6,7 +6,7 @@ type LockArgs struct {
 }
 
 type LockReply struct {
-	Error error
+	Success bool
 }
 
 type LockManageArgs struct {
@@ -33,4 +33,11 @@ type ClientConnectArgs struct {
 }
 type ClientConnectReply struct {
 	Error error
+}
+
+type FollowerConnectArgs struct {
+	FollowerIp string
+}
+type FollowerConnectReply struct {
+	Success bool
 }
