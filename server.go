@@ -36,6 +36,7 @@ func (s *Server) Lock(request LockManager_rpc.LockArgs, reply *LockManager_rpc.L
 		} else {
 			s.Locks[lockKey] = clientId
 			reply.Success = true
+			fmt.Printf("Leader lock %v from %v successfully!\n", lockKey, clientId)
 			return nil
 		}
 	} else {
@@ -47,11 +48,12 @@ func (s *Server) Lock(request LockManager_rpc.LockArgs, reply *LockManager_rpc.L
 		manageReply := &LockManager_rpc.LockManageReply{}
 		err := s.Leader.Call("Server.LockManage", manageRequest, manageReply)
 		if err != nil || manageReply.Success == false {
-			fmt.Printf("Follower %v request to leader failed!", s.Ip)
+			fmt.Printf("Follower %v request to leader failed!\n", s.Ip)
 			reply.Success = false
 			return nil
 		}
 		reply.Success = true
+		fmt.Printf("Follower %v lock %v from %v successfully!\n", s.Ip, lockKey, clientId)
 		return nil
 	}
 }
@@ -71,6 +73,7 @@ func (s *Server) UnLock(request LockManager_rpc.LockArgs, reply *LockManager_rpc
 			return nil
 		}
 		delete(s.Locks, lockKey)
+		fmt.Printf("Leader unlock %v from %v successfully!\n", lockKey, clientId)
 		reply.Success = true
 		return nil
 	} else {
@@ -86,6 +89,7 @@ func (s *Server) UnLock(request LockManager_rpc.LockArgs, reply *LockManager_rpc
 			reply.Success = false
 			return nil
 		}
+		fmt.Printf("Follower %v unlock %v from %v successfully!\n", s.Ip, lockKey, clientId)
 		reply.Success = true
 		return nil
 	}
@@ -94,19 +98,16 @@ func (s *Server) UnLock(request LockManager_rpc.LockArgs, reply *LockManager_rpc
 func (s *Server) OwnTheLock(request LockManager_rpc.LockArgs, reply *LockManager_rpc.LockReply) error {
 	lockKey := request.LockName
 	clientId := request.ClientId
-	if s.Ip == s.LeaderIp {
-		id, ok := s.Locks[lockKey]
-		if ok == false {
-			reply.Success = false
-			return nil
-		}
-		if id != clientId {
-			reply.Success = false
-			return nil
-		}
-		reply.Success = true
+	id, ok := s.Locks[lockKey]
+	if ok == false {
+		reply.Success = false
 		return nil
 	}
+	if id != clientId {
+		reply.Success = false
+		return nil
+	}
+	reply.Success = true
 	return nil
 }
 
@@ -135,8 +136,10 @@ func (s *Server) LockManage(request LockManager_rpc.LockManageArgs, reply *LockM
 				Modifyreply := &LockManager_rpc.LockModifyReply{}
 				err := s.Servers[i].Call("Server.LockModify", Modifyrequest, Modifyreply)
 				if err != nil || Modifyreply.Success == false {
-					fmt.Printf("Modify Client %v failed!\n", s.ServersIp[i])
+					fmt.Printf("Modify follower %v failed!\n", s.ServersIp[i])
 					return nil
+				} else {
+					fmt.Printf("Modify follower %v successfully!\n", s.ServersIp[i])
 				}
 			}
 			reply.Success = true
@@ -150,7 +153,7 @@ func (s *Server) LockManage(request LockManager_rpc.LockManageArgs, reply *LockM
 			reply.Success = false
 			return nil
 		}
-		if id != clientId {
+		if id == clientId {
 			// UnLock
 			for i := 0; i < len(s.ServersIp); i++ {
 				if s.ServersIp[i] == s.LeaderIp {
@@ -164,14 +167,19 @@ func (s *Server) LockManage(request LockManager_rpc.LockManageArgs, reply *LockM
 				if err != nil || Modifyreply.Success == false {
 					fmt.Printf("Modify Client %v failed!\n", s.ServersIp[i])
 					return nil
+				} else {
+					fmt.Printf("Modify follower %v successfully!\n", s.ServersIp[i])
 				}
 			}
+			delete(s.Locks, lockKey)
+			reply.Success = true
+			return nil
+		} else {
+			// Lock is not owned by client with clientId
+			fmt.Printf("Client is not owned by client %v!\n", clientId)
 			reply.Success = false
 			return nil
 		}
-		delete(s.Locks, lockKey)
-		reply.Success = true
-		return nil
 	}
 }
 
@@ -179,8 +187,10 @@ func (s *Server) LockModify(request LockManager_rpc.LockModifyArgs, reply *LockM
 	lockKey := request.LockName
 	clientId := request.ClientId
 	if clientId == "" {
+		fmt.Printf("Follower %v release lock %v.\n", s.Ip, lockKey)
 		delete(s.Locks, lockKey)
 	} else {
+		fmt.Printf("Follower %v add lock %v of client %v.\n", s.Ip, lockKey, clientId)
 		s.Locks[lockKey] = clientId
 	}
 	reply.Success = true
@@ -261,6 +271,7 @@ func main() {
 	var ServerIP = []string{
 		"0.0.0.0:80",
 		"0.0.0.0:81",
+		"0.0.0.0:82",
 	}
 	leaderIp := "0.0.0.0:80"
 	ip := os.Args[1]

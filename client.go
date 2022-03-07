@@ -11,6 +11,7 @@ import (
 var ServerIP = []string{
 	"0.0.0.0:80",
 	"0.0.0.0:81",
+	"0.0.0.0:82",
 }
 
 type DLClient struct {
@@ -129,17 +130,17 @@ func main() {
 	clientId := os.Args[2]
 	DL := DistributedLock(serverAddr, clientId)
 
-	DL.TryLock("lock1")
-	if DL.OwnTheLock("lock1") {
+	//DL.TryLock("lock2")
+	if DL.OwnTheLock("lock2") {
 		fmt.Println("Client own the lock")
 	} else {
 		fmt.Println("Client not own the lock")
 	}
-	DL.TryUnLock("lock1")
-	if DL.OwnTheLock("lock1") {
-		fmt.Println("Client own the lock")
-	} else {
-		fmt.Println("Client not own the lock")
-	}
+	//DL.TryUnLock("lock1")
+	//if DL.OwnTheLock("lock1") {
+	//	fmt.Println("Client own the lock")
+	//} else {
+	//	fmt.Println("Client not own the lock")
+	//}
 
 }
