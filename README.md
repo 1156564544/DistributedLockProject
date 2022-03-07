@@ -1,4 +1,5 @@
-# Distributed Lock Design
+# Distributed Lock Design  
+
 ** This is the project2 of SJTU CS7316. **  
 In this project, we will design a simple distributed lock manage server, which contains a leader nodes and mutiple follower nodes:  
 
